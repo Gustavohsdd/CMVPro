@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CMVPro</title>
 
-  <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Fonte -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
   <style>
@@ -19,36 +17,42 @@
     }
     html, body { height: 100%; }
     body { font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--azul-50); }
-
     .layout { min-height: 100vh; display: flex; }
     @media (max-width: 768px) {
       .layout { flex-direction: column; }
       aside  { width: 100% !important; height: auto !important; }
     }
-
     main::-webkit-scrollbar { width: 8px; }
     main::-webkit-scrollbar-thumb { background-color: #60a5fa; border-radius: 4px; }
     main::-webkit-scrollbar-track { background-color: #e5efff; }
-
     .menu-item.active { background-color: var(--azul-600); color: #fff; font-weight: 600; }
   </style>
 </head>
 <body class="text-gray-800">
+
+  <div id="login-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-2xl shadow-xl text-center">
+      <h2 class="text-2xl font-bold mb-2 text-gray-800">Bem-vindo ao CMVPro</h2>
+      <p class="text-gray-600 mb-6">Faça login para continuar.</p>
+      <button id="login-button" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+        Entrar com Google
+      </button>
+    </div>
+  </div>
+
   <div class="layout">
-    <!-- ASIDE -->
     <aside class="w-64 bg-[color:var(--azul-700)] text-white p-6 space-y-6 shadow-lg">
-      <div class="flex items-center">
+      <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold tracking-tight">CMVPro</h1>
+        <div id="user-info" class="hidden items-center">
+          <button id="logout-button" class="text-sm text-white/70 hover:text-white">Sair</button>
+        </div>
       </div>
 
       <nav>
         <ul class="space-y-2">
-          <li><a id="m1" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 1', this)">Página 1</a></li>
-          <li><a id="m2" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 2', this)">Página 2</a></li>
-          <li><a id="m3" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 3', this)">Página 3</a></li>
-          <li><a id="m4" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 4', this)">Página 4</a></li>
-          <li><a id="m5" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 5', this)">Página 5</a></li>
-          <li><a id="m6" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 6', this)">Página 6</a></li>
+          <li><a id="nav-receitas" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="public_index_mostrarPagina('receitas')">Receitas</a></li>
+          <li><a id="nav-insumos" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="public_index_mostrarPagina('insumos')">Insumos</a></li>
         </ul>
       </nav>
 
@@ -57,79 +61,190 @@
       </div>
     </aside>
 
-    <!-- MAIN -->
     <main id="app" class="flex-1 p-6 md:p-10 overflow-y-auto">
-      <header class="mb-6">
-        <h2 class="text-3xl font-bold text-gray-900">Bem-vindo ao <span class="text-[color:var(--azul-600)]">CMVPro</span></h2>
-        <p class="text-gray-600 mt-1">Use o menu à esquerda. Os títulos são temporários (Página 1, Página 2...).</p>
-      </header>
+      </main>
+  </div>
 
-      <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-        <article class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-5">
-          <h3 class="font-semibold text-gray-900 mb-2">Card padrão</h3>
-          <p class="text-gray-600">Com Tailwind, sombra suave e borda sutil.</p>
-        </article>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-functions-compat.js"></script>
 
-        <article class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-5">
-          <h3 class="font-semibold text-gray-900 mb-2">Componentes</h3>
-          <p class="text-gray-600">Botões, listas e tabelas seguem a mesma paleta.</p>
-          <div class="mt-3 flex gap-2">
-            <button class="px-4 py-2 rounded-lg bg-[color:var(--azul-600)] text-white hover:opacity-95">Primário</button>
-            <button class="px-4 py-2 rounded-lg bg-white ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50">Secundário</button>
+  <script>
+    // ***************************************************************
+    // ** PASSO IMPORTANTE: CONFIGURAÇÃO DO FIREBASE
+    // ** Cole aqui o objeto de configuração do seu projeto Firebase.
+    // ** Você encontra em: Console do Firebase > Configurações do Projeto > Geral > Seus Apps > App da Web
+    // ***************************************************************
+    const firebaseConfig = {
+      apiKey: "AIzaSyAK2fYpIOwetW6xOQHApuSb3WTyjJlyFi8",
+      authDomain: "controle-de-cmv-pro.firebaseapp.com",
+      projectId: "controle-de-cmv-pro",
+      storageBucket: "controle-de-cmv-pro.firebasestorage.app",
+      messagingSenderId: "762165281549",
+      appId: "1:762165281549:web:f485d42854b74aa680e644"
+    };
+
+    // INICIALIZAÇÃO DO FIREBASE
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const functions = firebase.functions();
+
+    // ELEMENTOS DA UI
+    const loginOverlay = document.getElementById("login-overlay");
+    const loginButton = document.getElementById("login-button");
+    const logoutButton = document.getElementById("logout-button");
+    const userInfo = document.getElementById("user-info");
+    const appContainer = document.getElementById("app");
+
+    // LÓGICA DE AUTENTICAÇÃO
+    loginButton.addEventListener("click", () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(error => {
+        console.error("Erro no login:", error);
+        alert("Ocorreu um erro ao tentar fazer login. Veja o console para detalhes.");
+      });
+    });
+
+    logoutButton.addEventListener("click", () => {
+      auth.signOut();
+    });
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        // Usuário está logado
+        loginOverlay.style.display = "none";
+        userInfo.classList.remove("hidden");
+        // Ao logar, carrega a página inicial de receitas
+        public_index_mostrarPagina('receitas');
+      } else {
+        // Usuário não está logado
+        loginOverlay.style.display = "flex";
+        userInfo.classList.add("hidden");
+        appContainer.innerHTML = ''; // Limpa o conteúdo principal
+      }
+    });
+
+    // ROTEAMENTO E RENDERIZAÇÃO DE PÁGINAS
+    function public_index_mostrarPagina(nomePagina) {
+      document.querySelectorAll(".menu-item").forEach(a => a.classList.remove("active"));
+      const linkAtivo = document.getElementById(`nav-${nomePagina}`);
+      if (linkAtivo) {
+        linkAtivo.classList.add("active");
+      }
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      if (nomePagina === 'receitas') {
+        public_index_renderizarPaginaReceitas();
+      } else if (nomePagina === 'insumos') {
+        public_index_renderizarPaginaInsumos();
+      }
+    }
+
+    function public_index_renderizarPaginaReceitas() {
+      appContainer.innerHTML = `
+        <header class="mb-6 flex justify-between items-center">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-900">Receitas</h2>
+            <p class="text-gray-600 mt-1">Gerencie suas receitas e calcule o CMV.</p>
           </div>
-        </article>
+          <button class="px-5 py-2.5 rounded-lg bg-[color:var(--azul-600)] text-white hover:opacity-95 font-semibold">Nova Receita</button>
+        </header>
+        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-6">
+          <p class="text-gray-700">Aqui será a listagem de receitas cadastradas.</p>
+          <p class="mt-4 text-sm text-gray-500">Funcionalidade de cadastro e cálculo de CMV a ser implementada.</p>
+        </div>`;
+    }
 
-        <article class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-0 overflow-hidden">
-          <div class="px-5 pt-5">
-            <h3 class="font-semibold text-gray-900 mb-2">Tabela exemplo</h3>
+    async function public_index_renderizarPaginaInsumos() {
+      appContainer.innerHTML = `
+        <header class="mb-6 flex justify-between items-center">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-900">Insumos</h2>
+            <p class="text-gray-600 mt-1">Veja e atualize os preços dos seus insumos.</p>
           </div>
-          <div class="overflow-x-auto">
+          <button id="btn-atualizar-precos" class="px-5 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold transition">
+            Atualizar Preços da Planilha
+          </button>
+        </header>
+        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-0 overflow-hidden">
+           <div class="overflow-x-auto">
             <table class="min-w-full text-left">
               <thead class="bg-[color:var(--azul-50)] text-gray-700">
                 <tr>
-                  <th class="px-5 py-3">Coluna A</th>
-                  <th class="px-5 py-3">Coluna B</th>
-                  <th class="px-5 py-3">Coluna C</th>
+                  <th class="px-5 py-3">Nome do Insumo</th>
+                  <th class="px-5 py-3">Unidade</th>
+                  <th class="px-5 py-3">Preço</th>
+                  <th class="px-5 py-3">Última Atualização</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100">
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3">Item 1</td>
-                  <td class="px-5 py-3">Detalhe</td>
-                  <td class="px-5 py-3">R$ 0,00</td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3">Item 2</td>
-                  <td class="px-5 py-3">Detalhe</td>
-                  <td class="px-5 py-3">R$ 0,00</td>
-                </tr>
+              <tbody id="insumos-table-body" class="divide-y divide-gray-100">
+                <tr><td colspan="4" class="text-center p-6 text-gray-500">Carregando insumos...</td></tr>
               </tbody>
             </table>
           </div>
-        </article>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    function nav(titulo, el) {
-      document.querySelectorAll(".menu-item").forEach(a => a.classList.remove("active"));
-      el.classList.add("active");
-      const app = document.getElementById("app");
-      app.innerHTML = `
-        <header class="mb-6">
-          <h2 class="text-3xl font-bold text-gray-900">${titulo}</h2>
-          <p class="text-gray-600 mt-1">Conteúdo placeholder — depois trocamos pelos módulos reais.</p>
-        </header>
-        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-6">
-          <p class="text-gray-700">Aqui entra o conteúdo da <strong>${titulo}</strong>.</p>
         </div>`;
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      // Adiciona o listener para o botão de atualizar preços
+      document.getElementById("btn-atualizar-precos").addEventListener('click', public_index_chamarFuncaoAtualizarPrecos);
+
+      // Carrega os dados dos insumos do Firestore
+      public_index_carregarInsumos();
     }
-    document.addEventListener("DOMContentLoaded", () => {
-      const first = document.getElementById("m1");
-      if (first) first.click();
-    });
+    
+    function public_index_carregarInsumos() {
+        const tableBody = document.getElementById("insumos-table-body");
+        db.collection("insumos").orderBy("nome").onSnapshot(querySnapshot => {
+            if (querySnapshot.empty) {
+                tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado. Clique em "Atualizar Preços da Planilha" para começar.</td></tr>`;
+                return;
+            }
+            
+            let html = '';
+            querySnapshot.forEach(doc => {
+                const insumo = doc.data();
+                const precoFormatado = insumo.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const dataFormatada = insumo.ultimaAtualizacao ? new Date(insumo.ultimaAtualizacao.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
+                html += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-5 py-3 font-medium text-gray-800">${insumo.nome}</td>
+                        <td class="px-5 py-3">${insumo.unidade}</td>
+                        <td class="px-5 py-3">${precoFormatado}</td>
+                        <td class="px-5 py-3 text-sm text-gray-600">${dataFormatada}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        }, error => {
+            console.error("Erro ao carregar insumos: ", error);
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-red-500">Ocorreu um erro ao carregar os insumos.</td></tr>`;
+        });
+    }
+
+    // FUNÇÃO PARA CHAMAR A CLOUD FUNCTION
+    async function public_index_chamarFuncaoAtualizarPrecos() {
+      const botao = document.getElementById('btn-atualizar-precos');
+      const textoOriginal = botao.innerHTML;
+      
+      botao.disabled = true;
+      botao.innerHTML = 'Atualizando...';
+      botao.classList.add('opacity-50', 'cursor-not-allowed');
+
+      try {
+        const atualizarPrecos = functions.httpsCallable('functions_index_atualizarPrecosDaPlanilha');
+        const resultado = await atualizarPrecos();
+        alert(`Sucesso! ${resultado.data.message}`);
+      } catch (error) {
+        console.error("Erro ao chamar a função:", error);
+        alert(`Erro: ${error.message}`);
+      } finally {
+        botao.disabled = false;
+        botao.innerHTML = textoOriginal;
+        botao.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
   </script>
 </body>
 </html>
