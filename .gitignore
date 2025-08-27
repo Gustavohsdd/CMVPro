@@ -1,0 +1,23 @@
+# Node / tooling
+node_modules/
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# Firebase / build
+.firebase/
+.firebaserc.local
+firebase-debug.log
+functions/node_modules/
+dist/
+build/
+
+# IDEs
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Credenciais e variáveis
+.env
+.env.*
+*.local
