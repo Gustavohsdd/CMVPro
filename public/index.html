@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMVPro</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fonte -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --azul-700: #1d4ed8; /* base do menu lateral */
+      --azul-600: #2563eb; /* hover/active */
+      --azul-50:  #eff6ff; /* fundo geral */
+    }
+    html, body { height: 100%; }
+    body { font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--azul-50); }
+
+    .layout { min-height: 100vh; display: flex; }
+    @media (max-width: 768px) {
+      .layout { flex-direction: column; }
+      aside  { width: 100% !important; height: auto !important; }
+    }
+
+    main::-webkit-scrollbar { width: 8px; }
+    main::-webkit-scrollbar-thumb { background-color: #60a5fa; border-radius: 4px; }
+    main::-webkit-scrollbar-track { background-color: #e5efff; }
+
+    .menu-item.active { background-color: var(--azul-600); color: #fff; font-weight: 600; }
+  </style>
+</head>
+<body class="text-gray-800">
+  <div class="layout">
+    <!-- ASIDE -->
+    <aside class="w-64 bg-[color:var(--azul-700)] text-white p-6 space-y-6 shadow-lg">
+      <div class="flex items-center">
+        <h1 class="text-2xl font-bold tracking-tight">CMVPro</h1>
+      </div>
+
+      <nav>
+        <ul class="space-y-2">
+          <li><a id="m1" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 1', this)">Página 1</a></li>
+          <li><a id="m2" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 2', this)">Página 2</a></li>
+          <li><a id="m3" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 3', this)">Página 3</a></li>
+          <li><a id="m4" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 4', this)">Página 4</a></li>
+          <li><a id="m5" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 5', this)">Página 5</a></li>
+          <li><a id="m6" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="nav('Página 6', this)">Página 6</a></li>
+        </ul>
+      </nav>
+
+      <div class="pt-4 border-t border-white/10 text-sm text-white/80">
+        <p>Versão inicial • Estilos base prontos</p>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main id="app" class="flex-1 p-6 md:p-10 overflow-y-auto">
+      <header class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">Bem-vindo ao <span class="text-[color:var(--azul-600)]">CMVPro</span></h2>
+        <p class="text-gray-600 mt-1">Use o menu à esquerda. Os títulos são temporários (Página 1, Página 2...).</p>
+      </header>
+
+      <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+        <article class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-5">
+          <h3 class="font-semibold text-gray-900 mb-2">Card padrão</h3>
+          <p class="text-gray-600">Com Tailwind, sombra suave e borda sutil.</p>
+        </article>
+
+        <article class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-5">
+          <h3 class="font-semibold text-gray-900 mb-2">Componentes</h3>
+          <p class="text-gray-600">Botões, listas e tabelas seguem a mesma paleta.</p>
+          <div class="mt-3 flex gap-2">
+            <button class="px-4 py-2 rounded-lg bg-[color:var(--azul-600)] text-white hover:opacity-95">Primário</button>
+            <button class="px-4 py-2 rounded-lg bg-white ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50">Secundário</button>
+          </div>
+        </article>
+
+        <article class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-0 overflow-hidden">
+          <div class="px-5 pt-5">
+            <h3 class="font-semibold text-gray-900 mb-2">Tabela exemplo</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left">
+              <thead class="bg-[color:var(--azul-50)] text-gray-700">
+                <tr>
+                  <th class="px-5 py-3">Coluna A</th>
+                  <th class="px-5 py-3">Coluna B</th>
+                  <th class="px-5 py-3">Coluna C</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3">Item 1</td>
+                  <td class="px-5 py-3">Detalhe</td>
+                  <td class="px-5 py-3">R$ 0,00</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3">Item 2</td>
+                  <td class="px-5 py-3">Detalhe</td>
+                  <td class="px-5 py-3">R$ 0,00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function nav(titulo, el) {
+      document.querySelectorAll(".menu-item").forEach(a => a.classList.remove("active"));
+      el.classList.add("active");
+      const app = document.getElementById("app");
+      app.innerHTML = `
+        <header class="mb-6">
+          <h2 class="text-3xl font-bold text-gray-900">${titulo}</h2>
+          <p class="text-gray-600 mt-1">Conteúdo placeholder — depois trocamos pelos módulos reais.</p>
+        </header>
+        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-6">
+          <p class="text-gray-700">Aqui entra o conteúdo da <strong>${titulo}</strong>.</p>
+        </div>`;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    document.addEventListener("DOMContentLoaded", () => {
+      const first = document.getElementById("m1");
+      if (first) first.click();
+    });
+  </script>
+</body>
+</html>
