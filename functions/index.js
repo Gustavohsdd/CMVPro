@@ -1,3 +1,4 @@
+// functions/index.js
 
 // Importação dos módulos necessários
 const functions = require("firebase-functions");
@@ -16,7 +17,6 @@ const db = admin.firestore();
  */
 exports.functions_index_atualizarPrecosDaPlanilha = functions.https.onCall(async (data, context) => {
   // 1. VERIFICAÇÃO DE AUTENTICAÇÃO
-  // Garante que a requisição venha de um usuário autenticado.
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
@@ -25,11 +25,8 @@ exports.functions_index_atualizarPrecosDaPlanilha = functions.https.onCall(async
   }
 
   // 2. CONFIGURAÇÃO DE ACESSO À PLANILHA
-  // ID da sua planilha. Pegue da URL da planilha (a parte entre /d/ e /edit).
   const SPREADSHEET_ID = "1CFbP6_VC4TOJXITwO-nvxu6IX1brAYJNUCaRW0VDXDY";
-
-  // Nome da aba/página da planilha que contém os dados.
-  const SHEET_NAME = "Cotacoes"; // Mude se o nome da sua aba for diferente
+  const SHEET_NAME = "Cotacoes";
 
   // Autentica usando as credenciais padrão do ambiente do Google Cloud Functions
   const auth = new google.auth.GoogleAuth({
@@ -39,54 +36,112 @@ exports.functions_index_atualizarPrecosDaPlanilha = functions.https.onCall(async
   const sheets = google.sheets({ version: "v4", auth });
 
   try {
-    // 3. LEITURA DOS DADOS DA PLANILHA
+    // 3. LEITURA DOS DADOS DA PLANILHA (incluindo cabeçalho)
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A2:M`, // Lê da coluna A até a C, começando da linha 2
+      range: `${SHEET_NAME}!A1:AB`, // Lê a planilha inteira da coluna A até a AB
     });
 
     const rows = response.data.values;
-    if (!rows || rows.length === 0) {
+    if (!rows || rows.length < 2) { // Precisa ter pelo menos cabeçalho e uma linha de dados
       console.log("Nenhum dado encontrado na planilha.");
       return { success: true, message: "Nenhum dado encontrado na planilha." };
     }
 
-    // 4. ATUALIZAÇÃO NO FIRESTORE
-    // Cria um "batch" para executar todas as operações de uma vez, o que é mais eficiente.
+    // 4. MAPEAMENTO DOS CABEÇALHOS PARA ÍNDICES DE COLUNA
+    const headerRow = rows[0];
+    const dataRows = rows.slice(1);
+
+    const columnIndex = {
+      produto: headerRow.indexOf("Produto"),
+      unidade: headerRow.indexOf("UN"),
+      preco: headerRow.indexOf("Preço"),
+      comprar: headerRow.indexOf("Comprar"),
+      dataAbertura: headerRow.indexOf("Data Abertura"),
+    };
+
+    // Validação para garantir que todas as colunas necessárias foram encontradas
+    for (const key in columnIndex) {
+      if (columnIndex[key] === -1) {
+        throw new functions.https.HttpsError(
+          "internal",
+          `A coluna obrigatória "${key}" não foi encontrada na planilha.`
+        );
+      }
+    }
+
+    // 5. PROCESSAMENTO DOS DADOS
+    
+    // Filtra apenas as linhas que devem ser compradas
+    const itensParaComprar = dataRows.filter(row => {
+      const quantidadeComprar = parseFloat(String(row[columnIndex.comprar] || '0').replace(",", ".")) || 0;
+      return quantidadeComprar > 0;
+    });
+
+    // Agrupa os itens por produto para encontrar a cotação mais recente
+    const ultimasCompras = {};
+    itensParaComprar.forEach(row => {
+      const nomeProduto = row[columnIndex.produto];
+      const dataAberturaStr = row[columnIndex.dataAbertura];
+
+      // Ignora linhas sem nome de produto ou data
+      if (!nomeProduto || !dataAberturaStr) {
+        return;
+      }
+      
+      // Converte data DD/MM/AAAA para um formato comparável (Date object)
+      const partesData = dataAberturaStr.split('/');
+      const dataAbertura = new Date(partesData[2], partesData[1] - 1, partesData[0]);
+
+      // Se o produto ainda não foi visto ou a data atual é mais recente, atualiza
+      if (!ultimasCompras[nomeProduto] || dataAbertura > ultimasCompras[nomeProduto].data) {
+        ultimasCompras[nomeProduto] = {
+          data: dataAbertura,
+          row: row,
+        };
+      }
+    });
+
+    // 6. ATUALIZAÇÃO NO FIRESTORE
     const batch = db.batch();
     let atualizacoes = 0;
 
-    rows.forEach(row => {
-      const [nome, unidade, precoStr] = row;
+    for (const produto in ultimasCompras) {
+      const item = ultimasCompras[produto];
+      const rowData = item.row;
 
-      // Validação simples dos dados da linha
+      const nome = rowData[columnIndex.produto];
+      const unidade = rowData[columnIndex.unidade];
+      const precoStr = rowData[columnIndex.preco];
+
       if (nome && unidade && precoStr) {
-        // Converte o preço para número (removendo "R$" e trocando vírgula por ponto)
-        const preco = parseFloat(precoStr.replace("R$", "").trim().replace(",", "."));
+        const preco = parseFloat(String(precoStr).replace("R$", "").trim().replace(",", "."));
 
         if (!isNaN(preco)) {
-          // O ID do documento no Firestore será o nome do insumo em minúsculas
-          // Isso evita duplicidade de insumos. Ex: "Farinha" e "farinha"
-          const docId = nome.trim().toLowerCase();
-          const docRef = db.collection("insumos").doc(docId);
+          // *** LINHA MODIFICADA AQUI ***
+          // Substitui o caractere problemático "/" por "-"
+          const docId = nome.trim().toLowerCase().replace(/\//g, "-");
+          
+          if (docId) { 
+            const docRef = db.collection("insumos").doc(docId);
 
-          // Adiciona a operação de atualização ao batch
-          batch.set(docRef, {
-            nome: nome.trim(),
-            unidade: unidade.trim(),
-            preco: preco,
-            ultimaAtualizacao: admin.firestore.FieldValue.serverTimestamp(),
-          }, { merge: true }); // { merge: true } cria o documento se não existir, ou atualiza se já existir
+            batch.set(docRef, {
+              nome: nome.trim(),
+              unidade: unidade.trim(),
+              preco: preco,
+              ultimaAtualizacao: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
 
-          atualizacoes++;
+            atualizacoes++;
+          }
         }
       }
-    });
+    }
 
     // Envia todas as atualizações para o Firestore de uma vez
     await batch.commit();
 
-    const message = `${atualizacoes} insumos foram atualizados com sucesso.`;
+    const message = `${atualizacoes} insumos foram atualizados com sucesso com base nas últimas cotações.`;
     console.log(message);
     return { success: true, message: message };
 
