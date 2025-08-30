@@ -4,10 +4,8 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { google } = require("googleapis");
 const path = require("path");
-// CORREÇÃO 1: Importar o FieldValue corretamente
 const { FieldValue } = require("firebase-admin/firestore");
 
-// Detecta se estamos no emulador e define o caminho da chave
 const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
 
 const serviceAccountKeyPath = isEmulator
@@ -85,8 +83,20 @@ exports.atualizarPrecosDaPlanilha = functions.https.onCall(async (data, context)
 
       if (!nomeProduto || !dataAberturaStr) { return; }
       
-      const partesData = dataAberturaStr.split('/');
+      // **INÍCIO DA CORREÇÃO**
+      // Pega apenas a parte da data, ignorando a hora
+      const somenteDataStr = dataAberturaStr.split(' ')[0];
+      const partesData = somenteDataStr.split('/');
+      // **FIM DA CORREÇÃO**
+
+      if (partesData.length !== 3) return;
+      // Ano, Mês (0-11), Dia
       const dataAbertura = new Date(partesData[2], partesData[1] - 1, partesData[0]);
+
+      if (isNaN(dataAbertura.getTime())) {
+        console.warn(`Data inválida encontrada para o produto "${nomeProduto}": ${dataAberturaStr}`);
+        return;
+      }
 
       if (!ultimasCompras[nomeProduto] || dataAbertura > ultimasCompras[nomeProduto].data) {
         ultimasCompras[nomeProduto] = {
@@ -115,19 +125,26 @@ exports.atualizarPrecosDaPlanilha = functions.https.onCall(async (data, context)
           
           if (docId) { 
             const docRef = db.collection("insumos").doc(docId);
-
-            batch.set(docRef, {
+            
+            const dadosParaSalvar = {
               nome: nome.trim(),
               unidade: unidade.trim(),
               preco: preco,
-              // CORREÇÃO 2: Usar o FieldValue importado
-              ultimaAtualizacao: FieldValue.serverTimestamp(),
-            }, { merge: true });
+              dataCotacao: item.data,
+            };
 
+            batch.set(docRef, dadosParaSalvar, { merge: true });
             atualizacoes++;
           }
         }
       }
+    }
+    
+    if (atualizacoes > 0) {
+        const metadataRef = db.collection("metadata").doc("insumos");
+        batch.set(metadataRef, { 
+            ultimaAtualizacaoGeral: FieldValue.serverTimestamp() 
+        }, { merge: true });
     }
 
     await batch.commit();
