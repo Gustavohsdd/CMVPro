@@ -91,6 +91,17 @@
     const db = firebase.firestore();
     const functions = firebase.functions();
 
+    // ===== Emuladores locais (apenas quando rodar em localhost/127.0.0.1) =====
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    try {
+    db.useEmulator('127.0.0.1', 8080);
+    functions.useEmulator('127.0.0.1', 5001);
+    console.log('🔌 Conectado aos Emuladores: Firestore:8080, Functions:5001');
+    } catch (e) {
+    console.warn('Não consegui conectar aos Emuladores:', e);
+    }
+    }
+
     // ELEMENTOS DA UI
     const loginOverlay = document.getElementById("login-overlay");
     const loginButton = document.getElementById("login-button");

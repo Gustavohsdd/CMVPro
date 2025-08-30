@@ -21,3 +21,6 @@ Thumbs.db
 .env
 .env.*
 *.local
+
+# Credenciais locais (não versionar)
+.keys/

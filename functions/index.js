@@ -5,6 +5,19 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { google } = require("googleapis");
 
+// ===== Auth local p/ Google Sheets via chave JSON =====
+const sheetsAuth = new google.auth.GoogleAuth({
+  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, // caminho da sua .keys\leitor-planilha.json
+  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+});
+
+async function getSheets() {
+  const authClient = await sheetsAuth.getClient();
+  console.log('Sheets usando credenciais em:', process.env.GOOGLE_APPLICATION_CREDENTIALS || '<não definida>');
+  return google.sheets({ version: 'v4', auth: authClient });
+}
+
+
 // Inicializa o Firebase Admin SDK para que a função possa acessar o Firestore
 admin.initializeApp();
 
