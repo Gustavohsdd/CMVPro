@@ -74,11 +74,6 @@
 
     let public_index_insumosData = [];
 
-    // ***************************************************************
-    // ** PASSO IMPORTANTE: CONFIGURAÇÃO DO FIREBASE
-    // ** Cole aqui o objeto de configuração do seu projeto Firebase.
-    // ** Você encontra em: Console do Firebase > Configurações do Projeto > Geral > Seus Apps > App da Web
-    // ***************************************************************
     const firebaseConfig = {
       apiKey: "AIzaSyAK2fYpIOwetW6xOQHApuSb3WTyjJlyFi8",
       authDomain: "controle-de-cmv-pro.firebaseapp.com",
@@ -96,13 +91,13 @@
 
     // ===== Emuladores locais (apenas quando rodar em localhost/127.0.0.1) =====
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    try {
-    db.useEmulator('127.0.0.1', 8080);
-    functions.useEmulator('127.0.0.1', 5001);
-    console.log('🔌 Conectado aos Emuladores: Firestore:8080, Functions:5001');
-    } catch (e) {
-    console.warn('Não consegui conectar aos Emuladores:', e);
-    }
+      try {
+        db.useEmulator('127.0.0.1', 8080);
+        functions.useEmulator('127.0.0.1', 5001);
+        console.log('🔌 Conectado aos Emuladores: Firestore:8080, Functions:5001');
+      } catch (e) {
+        console.warn('Não consegui conectar aos Emuladores:', e);
+      }
     }
 
     // ELEMENTOS DA UI
@@ -127,16 +122,13 @@
 
     auth.onAuthStateChanged(user => {
       if (user) {
-        // Usuário está logado
         loginOverlay.style.display = "none";
         userInfo.classList.remove("hidden");
-        // Ao logar, carrega a página inicial de receitas
         public_index_mostrarPagina('receitas');
       } else {
-        // Usuário não está logado
         loginOverlay.style.display = "flex";
         userInfo.classList.add("hidden");
-        appContainer.innerHTML = ''; // Limpa o conteúdo principal
+        appContainer.innerHTML = '';
       }
     });
 
@@ -159,34 +151,88 @@
 
     function public_index_renderizarPaginaReceitas() {
       appContainer.innerHTML = `
-        <header class="mb-6 flex justify-between items-center">
+        <header class="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <h2 class="text-3xl font-bold text-gray-900">Receitas</h2>
             <p class="text-gray-600 mt-1">Gerencie suas receitas e calcule o CMV.</p>
           </div>
-          <button class="px-5 py-2.5 rounded-lg bg-[color:var(--azul-600)] text-white hover:opacity-95 font-semibold">Nova Receita</button>
+          <div class="flex items-center gap-3">
+            <button id="btn-importar-receitas" class="px-5 py-2.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600 font-semibold transition">
+              Importar Receitas (Uso Único)
+            </button>
+            <button class="px-5 py-2.5 rounded-lg bg-[color:var(--azul-600)] text-white hover:opacity-95 font-semibold">Nova Receita</button>
+          </div>
         </header>
-        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-6">
-          <p class="text-gray-700">Aqui será a listagem de receitas cadastradas.</p>
-          <p class="mt-4 text-sm text-gray-500">Funcionalidade de cadastro e cálculo de CMV a ser implementada.</p>
+        
+        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 overflow-hidden">
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 280px);">
+            <table class="min-w-full text-left">
+              <thead class="bg-[color:var(--azul-50)] text-gray-700 sticky top-0">
+                <tr>
+                  <th class="px-5 py-3">Nome da Receita</th>
+                  <th class="px-5 py-3">Rendimento (KG)</th>
+                  <th class="px-5 py-3">Rendimento (UN)</th>
+                </tr>
+              </thead>
+              <tbody id="receitas-table-body" class="divide-y divide-gray-100">
+                <tr><td colspan="3" class="text-center p-6 text-gray-500">Carregando receitas...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>`;
+
+      document.getElementById('btn-importar-receitas').addEventListener('click', public_index_chamarFuncaoImportarReceitas);
+      public_index_carregarReceitas();
+    }
+    
+    // NOVA FUNÇÃO para carregar e exibir as receitas
+    function public_index_carregarReceitas() {
+      const tableBody = document.getElementById("receitas-table-body");
+      
+      db.collection("receitas").orderBy("nome").onSnapshot(querySnapshot => {
+        if (querySnapshot.empty) {
+            tableBody.innerHTML = `<tr><td colspan="3" class="text-center p-6 text-gray-500">Nenhuma receita encontrada. Tente importá-las.</td></tr>`;
+            return;
+        }
+        
+        let html = '';
+        querySnapshot.forEach(doc => {
+            const receita = doc.data();
+            
+            const rendimentoKgFormatado = receita.rendimentoKg.toLocaleString('pt-BR', { minimumFractionDigits: 3 });
+            const rendimentoUnFormatado = receita.rendimentoUn.toLocaleString('pt-BR');
+
+            html += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-5 py-3 font-medium text-gray-800">${receita.nome}</td>
+                    <td class="px-5 py-3">${rendimentoKgFormatado}</td>
+                    <td class="px-5 py-3">${rendimentoUnFormatado}</td>
+                </tr>
+            `;
+        });
+        tableBody.innerHTML = html;
+        
+      }, error => {
+          console.error("Erro ao carregar receitas: ", error);
+          tableBody.innerHTML = `<tr><td colspan="3" class="text-center p-6 text-red-500">Ocorreu um erro ao carregar as receitas.</td></tr>`;
+      });
     }
 
     async function public_index_renderizarPaginaInsumos() {
       appContainer.innerHTML = `
       <header class="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
-      <div class="flex-1">
-        <h2 class="text-3xl font-bold text-gray-900">Insumos</h2>
-        <p class="text-gray-600 mt-1">Veja e atualize os preços dos seus insumos.</p>
-      </div>
-      <div class="flex-none text-right">
-        <button id="btn-atualizar-precos" class="px-5 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold transition">
-          Atualizar Preços da Planilha
-        </button>
-        <p class="text-xs text-gray-500 mt-2">
-          Última verificação: <span id="ultima-verificacao-data">--</span>
-        </p>
-      </div>
+        <div class="flex-1">
+          <h2 class="text-3xl font-bold text-gray-900">Insumos</h2>
+          <p class="text-gray-600 mt-1">Veja e atualize os preços dos seus insumos.</p>
+        </div>
+        <div class="flex-none text-right">
+          <button id="btn-atualizar-precos" class="px-5 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold transition">
+            Atualizar Preços da Planilha
+          </button>
+          <p class="text-xs text-gray-500 mt-2">
+            Última verificação: <span id="ultima-verificacao-data">--</span>
+          </p>
+        </div>
       </header>
 
       <div class="mb-4">
@@ -194,76 +240,74 @@
       </div>
 
       <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 overflow-hidden">
-       <div class="overflow-y-auto" style="max-height: calc(100vh - 280px);">
-        <table class="min-w-full text-left">
-          <thead class="bg-[color:var(--azul-50)] text-gray-700 sticky top-0">
-            <tr>
-              <th class="px-5 py-3">Nome do Insumo</th>
-              <th class="px-5 py-3">Unidade</th>
-              <th class="px-5 py-3">Preço</th>
-              <th class="px-5 py-3">Data da Cotação</th>
-            </tr>
-          </thead>
-          <tbody id="insumos-table-body" class="divide-y divide-gray-100">
-            <tr><td colspan="4" class="text-center p-6 text-gray-500">Carregando insumos...</td></tr>
-          </tbody>
-        </table>
-      </div>
+        <div class="overflow-y-auto" style="max-height: calc(100vh - 280px);">
+          <table class="min-w-full text-left">
+            <thead class="bg-[color:var(--azul-50)] text-gray-700 sticky top-0">
+              <tr>
+                <th class="px-5 py-3">Nome do Insumo</th>
+                <th class="px-5 py-3">Unidade</th>
+                <th class="px-5 py-3">Preço</th>
+                <th class="px-5 py-3">Data da Cotação</th>
+              </tr>
+            </thead>
+            <tbody id="insumos-table-body" class="divide-y divide-gray-100">
+              <tr><td colspan="4" class="text-center p-6 text-gray-500">Carregando insumos...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>`;
 
       document.getElementById("btn-atualizar-precos").addEventListener('click', public_index_chamarFuncaoAtualizarPrecos);
-
       public_index_carregarInsumos();
       public_index_carregarUltimaAtualizacaoGeral();
-}
+    }
     
     function public_index_filtrarInsumos() {
-    const termoBusca = document.getElementById('insumos-search-input').value.toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Accent insensitive
-    const tableBody = document.getElementById("insumos-table-body");
+      const termoBusca = document.getElementById('insumos-search-input').value.toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const tableBody = document.getElementById("insumos-table-body");
 
-    const insumosFiltrados = public_index_insumosData.filter(insumo => {
-        const nome = insumo.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const unidade = insumo.unidade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const preco = insumo.preco.toString().toLowerCase().replace(",", ".");
-        const dataCotacao = insumo.dataCotacao ? insumo.dataCotacao.toDate().toLocaleDateString('pt-BR') : '';
+      const insumosFiltrados = public_index_insumosData.filter(insumo => {
+          const nome = insumo.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const unidade = insumo.unidade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const preco = insumo.preco.toString().toLowerCase().replace(",", ".");
+          const dataCotacao = insumo.dataCotacao ? insumo.dataCotacao.toDate().toLocaleDateString('pt-BR') : '';
 
-        return nome.includes(termoBusca) ||
-               unidade.includes(termoBusca) ||
-               preco.includes(termoBusca) ||
-               dataCotacao.includes(termoBusca);
-    });
+          return nome.includes(termoBusca) ||
+                 unidade.includes(termoBusca) ||
+                 preco.includes(termoBusca) ||
+                 dataCotacao.includes(termoBusca);
+      });
 
-    if (insumosFiltrados.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado para a busca "${document.getElementById('insumos-search-input').value}".</td></tr>`;
-        return;
+      if (insumosFiltrados.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado para a busca "${document.getElementById('insumos-search-input').value}".</td></tr>`;
+          return;
+      }
+
+      let html = '';
+      insumosFiltrados.forEach(insumo => {
+          const precoFormatado = insumo.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          
+          let dataCotacaoFormatada = 'N/A';
+          if (insumo.dataCotacao) {
+              const jsDate = insumo.dataCotacao.toDate();
+              dataCotacaoFormatada = jsDate.toLocaleDateString('pt-BR', {
+                  day: '2-digit', month: '2-digit', year: 'numeric'
+              });
+          }
+          
+          html += `
+              <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3 font-medium text-gray-800">${insumo.nome}</td>
+                  <td class="px-5 py-3">${insumo.unidade}</td>
+                  <td class="px-5 py-3">${precoFormatado}</td>
+                  <td class="px-5 py-3 text-sm text-gray-600">${dataCotacaoFormatada}</td>
+              </tr>
+          `;
+      });
+      tableBody.innerHTML = html;
     }
 
-    let html = '';
-    insumosFiltrados.forEach(insumo => {
-        const precoFormatado = insumo.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        
-        let dataCotacaoFormatada = 'N/A';
-        if (insumo.dataCotacao) {
-            const jsDate = insumo.dataCotacao.toDate();
-            dataCotacaoFormatada = jsDate.toLocaleDateString('pt-BR', {
-                day: '2-digit', month: '2-digit', year: 'numeric'
-            });
-        }
-        
-        html += `
-            <tr class="hover:bg-gray-50">
-                <td class="px-5 py-3 font-medium text-gray-800">${insumo.nome}</td>
-                <td class="px-5 py-3">${insumo.unidade}</td>
-                <td class="px-5 py-3">${precoFormatado}</td>
-                <td class="px-5 py-3 text-sm text-gray-600">${dataCotacaoFormatada}</td>
-            </tr>
-        `;
-    });
-    tableBody.innerHTML = html;
-}
-
-    // NOVA FUNÇÃO para buscar a data da última atualização geral
     function public_index_carregarUltimaAtualizacaoGeral() {
         const dataElement = document.getElementById("ultima-verificacao-data");
         db.collection("metadata").doc("insumos").onSnapshot(doc => {
@@ -280,30 +324,28 @@
         });
     }
 
-    // FUNÇÃO ATUALIZADA para carregar os insumos na tabela
     function public_index_carregarInsumos() {
-    const tableBody = document.getElementById("insumos-table-body");
-    db.collection("insumos").orderBy("nome").onSnapshot(querySnapshot => {
-        public_index_insumosData = []; // Limpa os dados antes de carregar
-        
-        if (querySnapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado. Clique em "Atualizar Preços da Planilha" para começar.</td></tr>`;
-            return;
-        }
-        
-        querySnapshot.forEach(doc => {
-            public_index_insumosData.push(doc.data());
-        });
-        
-        public_index_filtrarInsumos(); // Chama a função de filtro para renderizar os dados
-        
-    }, error => {
-        console.error("Erro ao carregar insumos: ", error);
-        tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-red-500">Ocorreu um erro ao carregar os insumos.</td></tr>`;
-    });
-}
+      const tableBody = document.getElementById("insumos-table-body");
+      db.collection("insumos").orderBy("nome").onSnapshot(querySnapshot => {
+          public_index_insumosData = [];
+          
+          if (querySnapshot.empty) {
+              tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado. Clique em "Atualizar Preços da Planilha" para começar.</td></tr>`;
+              return;
+          }
+          
+          querySnapshot.forEach(doc => {
+              public_index_insumosData.push(doc.data());
+          });
+          
+          public_index_filtrarInsumos();
+          
+      }, error => {
+          console.error("Erro ao carregar insumos: ", error);
+          tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-red-500">Ocorreu um erro ao carregar os insumos.</td></tr>`;
+      });
+    }
 
-    // FUNÇÃO PARA CHAMAR A CLOUD FUNCTION (sem alterações)
     async function public_index_chamarFuncaoAtualizarPrecos() {
       const botao = document.getElementById('btn-atualizar-precos');
       const textoOriginal = botao.innerHTML;
@@ -323,6 +365,36 @@
         botao.disabled = false;
         botao.innerHTML = textoOriginal;
         botao.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    async function public_index_chamarFuncaoImportarReceitas() {
+     const confirmacao = confirm(
+       "ATENÇÃO: Esta é uma operação de uso único para importar todas as receitas da planilha.\n\nDeseja continuar?"
+     );
+
+     if (!confirmacao) {
+       return;
+     }
+
+     const botao = document.getElementById('btn-importar-receitas');
+     const textoOriginal = botao.innerHTML;
+      
+     botao.disabled = true;
+     botao.innerHTML = 'Importando...';
+     botao.classList.add('opacity-50', 'cursor-not-allowed');
+
+     try {
+       const importarReceitas = functions.httpsCallable('importarReceitasDaPlanilha');
+       const resultado = await importarReceitas();
+       alert(`Sucesso! ${resultado.data.message}`);
+     } catch (error) {
+       console.error("Erro ao chamar a função de importação de receitas:", error);
+       alert(`Erro ao importar: ${error.message}`);
+     } finally {
+       botao.disabled = false;
+       botao.innerHTML = textoOriginal;
+       botao.classList.remove('opacity-50', 'cursor-not-allowed');
       }
     }
   </script>

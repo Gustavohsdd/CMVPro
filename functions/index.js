@@ -158,3 +158,6 @@ exports.atualizarPrecosDaPlanilha = functions.https.onCall(async (data, context)
     );
   }
 });
+
+// Função "importar-receitas" da planilha de compras
+exports.importarReceitasDaPlanilha = require('./importar-receitas.js').importarReceitasDaPlanilha;
