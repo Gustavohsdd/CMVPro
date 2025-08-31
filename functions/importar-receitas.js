@@ -5,11 +5,8 @@ const admin = require("firebase-admin");
 const { google } = require("googleapis");
 const path = require("path");
 
-// A inicialização do app já é feita no index.js principal.
-// Aqui, apenas garantimos acesso ao Firestore.
 const db = admin.firestore();
 
-// Pega as credenciais da mesma forma que o arquivo index.js
 const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
 const serviceAccountKeyPath = isEmulator
   ? path.resolve(__dirname, '../.keys/leitor-planilha.json')
@@ -25,7 +22,6 @@ async function importar_receitas_js_getSheets() {
   return google.sheets({ version: 'v4', auth: authClient });
 }
 
-// Função principal de importação
 exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
@@ -34,7 +30,6 @@ exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context
     );
   }
 
-  // !!! ATENÇÃO: Substitua pelo ID da sua planilha !!!
   const SPREADSHEET_ID = "1CFbP6_VC4TOJXITwO-nvxu6IX1brAYJNUCaRW0VDXDY"; 
   const SHEET_NAME = "Receitas";
 
@@ -43,7 +38,7 @@ exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A:H`, // Lendo da coluna A até a H
+      range: `${SHEET_NAME}!A:H`,
     });
 
     const rows = response.data.values;
@@ -55,16 +50,15 @@ exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context
     const headerRow = rows[0];
     const dataRows = rows.slice(1);
 
-    // Mapeamento das colunas com base na sua imagem
     const columnIndex = {
       produto: headerRow.indexOf("Produto"),
       insumo: headerRow.indexOf("Insumos"),
       quantidade: headerRow.indexOf("Quantidade"),
       rendimentoKg: headerRow.indexOf("Rendimento KG"),
       rendimentoUn: headerRow.indexOf("Rendimento UN"),
+      perda: headerRow.indexOf("Perda"), // NOVA COLUNA
     };
 
-    // Validação das colunas
     for (const key in columnIndex) {
       if (columnIndex[key] === -1) {
         throw new functions.https.HttpsError(
@@ -77,7 +71,6 @@ exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context
     const receitasAgrupadas = {};
     let receitaAtual = null;
 
-    // Agrupando os insumos por receita
     dataRows.forEach(row => {
       const nomeReceita = row[columnIndex.produto] ? String(row[columnIndex.produto]).trim() : null;
       const nomeInsumo = row[columnIndex.insumo] ? String(row[columnIndex.insumo]).trim() : null;
@@ -87,11 +80,15 @@ exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context
         if (!receitasAgrupadas[receitaAtual]) {
           const rendimentoKg = parseFloat(String(row[columnIndex.rendimentoKg] || '0').replace(",", ".")) || 0;
           const rendimentoUn = parseFloat(String(row[columnIndex.rendimentoUn] || '0').replace(",", ".")) || 0;
+          // CAPTURA O VALOR DA PERDA
+          const perdaStr = String(row[columnIndex.perda] || '0').replace("%", "").trim().replace(",", ".");
+          const perda = parseFloat(perdaStr) / 100 || 0; // Armazena como decimal (ex: 5% -> 0.05)
           
           receitasAgrupadas[receitaAtual] = {
             nome: receitaAtual,
             rendimentoKg: rendimentoKg,
             rendimentoUn: rendimentoUn,
+            perda: perda, // NOVO CAMPO
             insumos: []
           };
         }
@@ -102,7 +99,6 @@ exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context
         const quantidade = parseFloat(quantidadeStr) || 0;
 
         if (quantidade > 0) {
-          // Cria uma referência ao documento do insumo no Firestore
           const docIdInsumo = nomeInsumo.toLowerCase().replace(/\//g, "-");
           const insumoRef = db.collection("insumos").doc(docIdInsumo);
 
@@ -115,14 +111,12 @@ exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context
       }
     });
     
-    // Preparando para salvar os dados no Firestore
     const batch = db.batch();
     let receitasProcessadas = 0;
 
     for (const nomeReceita in receitasAgrupadas) {
       const receitaData = receitasAgrupadas[nomeReceita];
       
-      // Garante que a receita tenha insumos antes de salvar
       if (receitaData.insumos.length > 0) {
         const docIdReceita = nomeReceita.trim().toLowerCase().replace(/\//g, "-");
         
@@ -136,7 +130,7 @@ exports.importarReceitasDaPlanilha = functions.https.onCall(async (data, context
 
     await batch.commit();
 
-    const message = `${receitasProcessadas} receitas foram importadas ou atualizadas com sucesso.`;
+    const message = `${receitasProcessadas} receitas foram importadas ou atualizadas com sucesso (com o campo 'Perda').`;
     console.log(message);
     return { success: true, message: message };
 
