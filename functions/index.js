@@ -57,7 +57,7 @@ exports.atualizarPrecosDaPlanilha = functions.https.onCall(async (data, context)
     const columnIndex = {
       produto: headerRow.indexOf("Produto"),
       unidade: headerRow.indexOf("UN"),
-      preco: headerRow.indexOf("Preço"),
+      preco: headerRow.indexOf("Preço por Fator"), // MODIFICADO
       comprar: headerRow.indexOf("Comprar"),
       dataAbertura: headerRow.indexOf("Data Abertura"),
     };
@@ -83,14 +83,10 @@ exports.atualizarPrecosDaPlanilha = functions.https.onCall(async (data, context)
 
       if (!nomeProduto || !dataAberturaStr) { return; }
       
-      // **INÍCIO DA CORREÇÃO**
-      // Pega apenas a parte da data, ignorando a hora
       const somenteDataStr = dataAberturaStr.split(' ')[0];
       const partesData = somenteDataStr.split('/');
-      // **FIM DA CORREÇÃO**
-
+      
       if (partesData.length !== 3) return;
-      // Ano, Mês (0-11), Dia
       const dataAbertura = new Date(partesData[2], partesData[1] - 1, partesData[0]);
 
       if (isNaN(dataAbertura.getTime())) {
