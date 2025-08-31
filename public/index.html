@@ -71,6 +71,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-functions-compat.js"></script>
 
   <script>
+
+    let public_index_insumosData = [];
+
     // ***************************************************************
     // ** PASSO IMPORTANTE: CONFIGURAÇÃO DO FIREBASE
     // ** Cole aqui o objeto de configuração do seu projeto Firebase.
@@ -171,46 +174,95 @@
 
     async function public_index_renderizarPaginaInsumos() {
       appContainer.innerHTML = `
-        <header class="mb-6 flex justify-between items-center">
-          <div>
-            <h2 class="text-3xl font-bold text-gray-900">Insumos</h2>
-            <p class="text-gray-600 mt-1">Veja e atualize os preços dos seus insumos.</p>
-          </div>
-          <div class="text-right">
-            <button id="btn-atualizar-precos" class="px-5 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold transition">
-              Atualizar Preços da Planilha
-            </button>
-            <p class="text-xs text-gray-500 mt-2">
-              Última verificação: <span id="ultima-verificacao-data">--</span>
-            </p>
-          </div>
-        </header>
-        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 p-0 overflow-hidden">
-           <div class="overflow-x-auto">
-            <table class="min-w-full text-left">
-              <thead class="bg-[color:var(--azul-50)] text-gray-700">
-                <tr>
-                  <th class="px-5 py-3">Nome do Insumo</th>
-                  <th class="px-5 py-3">Unidade</th>
-                  <th class="px-5 py-3">Preço</th>
-                  <th class="px-5 py-3">Data da Cotação</th>
-                </tr>
-              </thead>
-              <tbody id="insumos-table-body" class="divide-y divide-gray-100">
-                <tr><td colspan="4" class="text-center p-6 text-gray-500">Carregando insumos...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>`;
+      <header class="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
+      <div class="flex-1">
+        <h2 class="text-3xl font-bold text-gray-900">Insumos</h2>
+        <p class="text-gray-600 mt-1">Veja e atualize os preços dos seus insumos.</p>
+      </div>
+      <div class="flex-none text-right">
+        <button id="btn-atualizar-precos" class="px-5 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold transition">
+          Atualizar Preços da Planilha
+        </button>
+        <p class="text-xs text-gray-500 mt-2">
+          Última verificação: <span id="ultima-verificacao-data">--</span>
+        </p>
+      </div>
+      </header>
 
-      // Adiciona o listener para o botão de atualizar preços
+      <div class="mb-4">
+        <input type="text" id="insumos-search-input" placeholder="Buscar por nome, unidade, preço..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" onkeyup="public_index_filtrarInsumos()">
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 overflow-hidden">
+       <div class="overflow-y-auto" style="max-height: calc(100vh - 280px);">
+        <table class="min-w-full text-left">
+          <thead class="bg-[color:var(--azul-50)] text-gray-700 sticky top-0">
+            <tr>
+              <th class="px-5 py-3">Nome do Insumo</th>
+              <th class="px-5 py-3">Unidade</th>
+              <th class="px-5 py-3">Preço</th>
+              <th class="px-5 py-3">Data da Cotação</th>
+            </tr>
+          </thead>
+          <tbody id="insumos-table-body" class="divide-y divide-gray-100">
+            <tr><td colspan="4" class="text-center p-6 text-gray-500">Carregando insumos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      </div>`;
+
       document.getElementById("btn-atualizar-precos").addEventListener('click', public_index_chamarFuncaoAtualizarPrecos);
 
-      // Carrega os dados dos insumos e a data da última atualização geral
       public_index_carregarInsumos();
       public_index_carregarUltimaAtualizacaoGeral();
-    }
+}
     
+    function public_index_filtrarInsumos() {
+    const termoBusca = document.getElementById('insumos-search-input').value.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Accent insensitive
+    const tableBody = document.getElementById("insumos-table-body");
+
+    const insumosFiltrados = public_index_insumosData.filter(insumo => {
+        const nome = insumo.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const unidade = insumo.unidade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const preco = insumo.preco.toString().toLowerCase().replace(",", ".");
+        const dataCotacao = insumo.dataCotacao ? insumo.dataCotacao.toDate().toLocaleDateString('pt-BR') : '';
+
+        return nome.includes(termoBusca) ||
+               unidade.includes(termoBusca) ||
+               preco.includes(termoBusca) ||
+               dataCotacao.includes(termoBusca);
+    });
+
+    if (insumosFiltrados.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado para a busca "${document.getElementById('insumos-search-input').value}".</td></tr>`;
+        return;
+    }
+
+    let html = '';
+    insumosFiltrados.forEach(insumo => {
+        const precoFormatado = insumo.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        let dataCotacaoFormatada = 'N/A';
+        if (insumo.dataCotacao) {
+            const jsDate = insumo.dataCotacao.toDate();
+            dataCotacaoFormatada = jsDate.toLocaleDateString('pt-BR', {
+                day: '2-digit', month: '2-digit', year: 'numeric'
+            });
+        }
+        
+        html += `
+            <tr class="hover:bg-gray-50">
+                <td class="px-5 py-3 font-medium text-gray-800">${insumo.nome}</td>
+                <td class="px-5 py-3">${insumo.unidade}</td>
+                <td class="px-5 py-3">${precoFormatado}</td>
+                <td class="px-5 py-3 text-sm text-gray-600">${dataCotacaoFormatada}</td>
+            </tr>
+        `;
+    });
+    tableBody.innerHTML = html;
+}
+
     // NOVA FUNÇÃO para buscar a data da última atualização geral
     function public_index_carregarUltimaAtualizacaoGeral() {
         const dataElement = document.getElementById("ultima-verificacao-data");
@@ -230,42 +282,26 @@
 
     // FUNÇÃO ATUALIZADA para carregar os insumos na tabela
     function public_index_carregarInsumos() {
-        const tableBody = document.getElementById("insumos-table-body");
-        db.collection("insumos").orderBy("nome").onSnapshot(querySnapshot => {
-            if (querySnapshot.empty) {
-                tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado. Clique em "Atualizar Preços da Planilha" para começar.</td></tr>`;
-                return;
-            }
-            
-            let html = '';
-            querySnapshot.forEach(doc => {
-                const insumo = doc.data();
-                const precoFormatado = insumo.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                
-                // Formata a nova data de cotação
-                let dataCotacaoFormatada = 'N/A';
-                if (insumo.dataCotacao) {
-                    const jsDate = insumo.dataCotacao.toDate(); // Converte Timestamp do Firestore para Date do JS
-                    dataCotacaoFormatada = jsDate.toLocaleDateString('pt-BR', {
-                        day: '2-digit', month: '2-digit', year: 'numeric'
-                    });
-                }
-                
-                html += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-5 py-3 font-medium text-gray-800">${insumo.nome}</td>
-                        <td class="px-5 py-3">${insumo.unidade}</td>
-                        <td class="px-5 py-3">${precoFormatado}</td>
-                        <td class="px-5 py-3 text-sm text-gray-600">${dataCotacaoFormatada}</td>
-                    </tr>
-                `;
-            });
-            tableBody.innerHTML = html;
-        }, error => {
-            console.error("Erro ao carregar insumos: ", error);
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-red-500">Ocorreu um erro ao carregar os insumos.</td></tr>`;
+    const tableBody = document.getElementById("insumos-table-body");
+    db.collection("insumos").orderBy("nome").onSnapshot(querySnapshot => {
+        public_index_insumosData = []; // Limpa os dados antes de carregar
+        
+        if (querySnapshot.empty) {
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado. Clique em "Atualizar Preços da Planilha" para começar.</td></tr>`;
+            return;
+        }
+        
+        querySnapshot.forEach(doc => {
+            public_index_insumosData.push(doc.data());
         });
-    }
+        
+        public_index_filtrarInsumos(); // Chama a função de filtro para renderizar os dados
+        
+    }, error => {
+        console.error("Erro ao carregar insumos: ", error);
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-red-500">Ocorreu um erro ao carregar os insumos.</td></tr>`;
+    });
+}
 
     // FUNÇÃO PARA CHAMAR A CLOUD FUNCTION (sem alterações)
     async function public_index_chamarFuncaoAtualizarPrecos() {
