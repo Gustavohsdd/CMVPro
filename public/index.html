@@ -4,50 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CMVPro</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-
   <style>
     :root {
-      --azul-700: #1d4ed8; /* base do menu lateral */
-      --azul-600: #2563eb; /* hover/active */
-      --azul-50:  #eff6ff; /* fundo geral */
+      --azul-700: #1d4ed8; --azul-600: #2563eb; --azul-50:  #eff6ff;
     }
     html, body { height: 100%; }
-    body { font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--azul-50); }
+    body { font-family: "Inter", system-ui, sans-serif; background: var(--azul-50); }
     .layout { min-height: 100vh; display: flex; }
-    @media (max-width: 768px) {
-      .layout { flex-direction: column; }
-      aside  { width: 100% !important; height: auto !important; }
-    }
+    @media (max-width: 768px) { .layout { flex-direction: column; } aside  { width: 100% !important; height: auto !important; } }
     main::-webkit-scrollbar { width: 8px; }
     main::-webkit-scrollbar-thumb { background-color: #60a5fa; border-radius: 4px; }
     main::-webkit-scrollbar-track { background-color: #e5efff; }
     .menu-item.active { background-color: var(--azul-600); color: #fff; font-weight: 600; }
-
-    /* ESTILOS PARA O MODAL */
-    .modal-overlay {
-      display: none; /* Inicia oculto */
-      position: fixed;
-      inset: 0;
-      background-color: rgba(0, 0, 0, 0.7);
-      z-index: 50;
-      justify-content: center;
-      align-items: center;
-      padding: 1rem;
-    }
-    .modal-content {
-      background-color: white;
-      padding: 1.5rem;
-      border-radius: 0.75rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      width: 100%;
-      max-width: 56rem; /* 896px - Aumentado para comportar as duas colunas */
-      max-height: 90vh;
-      overflow-y: auto;
-    }
+    .modal-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7); z-index: 50; justify-content: center; align-items: center; padding: 1rem; }
+    .modal-content { background-color: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 100%; max-width: 56rem; max-height: 90vh; overflow-y: auto; }
   </style>
 </head>
 <body class="text-gray-800">
@@ -56,9 +28,7 @@
     <div class="bg-white p-8 rounded-2xl shadow-xl text-center">
       <h2 class="text-2xl font-bold mb-2 text-gray-800">Bem-vindo ao CMVPro</h2>
       <p class="text-gray-600 mb-6">Faça login para continuar.</p>
-      <button id="login-button" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-        Entrar com Google
-      </button>
+      <button id="login-button" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">Entrar com Google</button>
     </div>
   </div>
 
@@ -72,114 +42,58 @@
       </div>
       <nav>
         <ul class="space-y-2">
-          <li><a id="nav-receitas" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="public_index_mostrarPagina('receitas')">Receitas</a></li>
-          <li><a id="nav-insumos" href="#" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition" onclick="public_index_mostrarPagina('insumos')">Insumos</a></li>
+          <li><a id="nav-receitas" href="#receitas" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition">Receitas</a></li>
+          <li><a id="nav-insumos" href="#insumos" class="menu-item block px-4 py-2.5 rounded-lg hover:bg-[color:var(--azul-600)] transition">Insumos</a></li>
         </ul>
       </nav>
       <div class="pt-4 border-t border-white/10 text-sm text-white/80">
         <p>Versão inicial • Estilos base prontos</p>
       </div>
     </aside>
-
     <main id="app" class="flex-1 p-6 md:p-10 overflow-y-auto"></main>
   </div>
 
   <div id="receita-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="flex justify-between items-start mb-4">
-          <h3 class="text-2xl font-bold text-gray-800" id="modal-nome-produto">Nome da Receita</h3>
-          <button onclick="public_index_fecharModalReceita()" class="text-gray-400 hover:text-gray-700 text-3xl leading-none">&times;</button>
+          <h3 class="text-2xl font-bold text-gray-800" id="modal-nome-produto"></h3>
+          <button onclick="public_receitas_fecharModalReceita()" class="text-gray-400 hover:text-gray-700 text-3xl leading-none">&times;</button>
       </div>
-
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-center">
-        <div class="bg-gray-100 p-3 rounded-lg">
-          <label class="text-sm font-semibold text-gray-600">Rendimento KG</label>
-          <p class="text-xl font-bold text-gray-900" id="modal-rendimento-kg">0,000</p>
-        </div>
-        <div class="bg-gray-100 p-3 rounded-lg">
-          <label class="text-sm font-semibold text-gray-600">Rendimento UN</label>
-          <p class="text-xl font-bold text-gray-900" id="modal-rendimento-un">0</p>
-        </div>
-        <div class="bg-gray-100 p-3 rounded-lg">
-          <label class="text-sm font-semibold text-gray-600">Perda</label>
-          <p class="text-xl font-bold text-gray-900" id="modal-perda">0,00%</p>
-        </div>
+        <div class="bg-gray-100 p-3 rounded-lg"><label class="text-sm font-semibold text-gray-600">Rendimento KG</label><p class="text-xl font-bold text-gray-900" id="modal-rendimento-kg"></p></div>
+        <div class="bg-gray-100 p-3 rounded-lg"><label class="text-sm font-semibold text-gray-600">Rendimento UN</label><p class="text-xl font-bold text-gray-900" id="modal-rendimento-un"></p></div>
+        <div class="bg-gray-100 p-3 rounded-lg"><label class="text-sm font-semibold text-gray-600">Perda</label><p class="text-xl font-bold text-gray-900" id="modal-perda"></p></div>
       </div>
-
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="md:col-span-2">
           <h4 class="font-semibold text-lg mb-2">Insumos</h4>
-          <div class="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
-            <table class="min-w-full text-left">
-              <thead class="bg-gray-50 sticky top-0">
-                <tr>
-                  <th class="px-4 py-2 text-sm font-semibold text-gray-600">Insumo</th>
-                  <th class="px-4 py-2 text-sm font-semibold text-gray-600">Quantidade</th>
-                  <th class="px-4 py-2 text-sm font-semibold text-gray-600">Preço Unit.</th>
-                  <th class="px-4 py-2 text-sm font-semibold text-gray-600">Valor Usado</th>
-                </tr>
-              </thead>
-              <tbody id="modal-insumos-tbody" class="divide-y divide-gray-200"></tbody>
-            </table>
-          </div>
+          <div class="border rounded-lg overflow-hidden max-h-64 overflow-y-auto"><table class="min-w-full text-left"><thead class="bg-gray-50 sticky top-0"><tr><th class="px-4 py-2 text-sm font-semibold text-gray-600">Insumo</th><th class="px-4 py-2 text-sm font-semibold text-gray-600">Quantidade</th><th class="px-4 py-2 text-sm font-semibold text-gray-600">Preço Unit.</th><th class="px-4 py-2 text-sm font-semibold text-gray-600">Valor Usado</th></tr></thead><tbody id="modal-insumos-tbody" class="divide-y divide-gray-200"></tbody></table></div>
         </div>
-
         <div class="md:col-span-1 space-y-2 text-center">
-          <div class="bg-gray-100 p-2 rounded-lg">
-            <label class="text-xs font-semibold text-gray-500">Medida de Venda</label>
-            <p id="modal-medida-venda" class="text-lg font-bold text-gray-800">UN</p>
-          </div>
-          <div class="bg-yellow-100 p-2 rounded-lg border border-yellow-300">
-            <label class="text-xs font-semibold text-yellow-800">Preço de Venda</label>
-            <p id="modal-preco-venda" class="text-xl font-bold text-yellow-900">R$ 0,00</p>
-          </div>
-          <div class="bg-gray-200 p-2 rounded-lg">
-            <label class="text-xs font-semibold text-gray-500">Preço Sugerido</label>
-            <p id="modal-preco-sugerido" class="text-lg font-bold text-gray-800">R$ 0,00</p>
-          </div>
-          <div class="bg-red-700 text-white p-2 rounded-lg">
-            <label class="text-xs font-semibold opacity-80">Markup</label>
-            <p id="modal-markup" class="text-lg font-bold">0,00%</p>
-          </div>
-          <div class="bg-red-800 text-white p-2 rounded-lg">
-            <label class="text-xs font-semibold opacity-80">CMV</label>
-            <p id="modal-cmv" class="text-lg font-bold">0,00%</p>
-          </div>
-          <div class="bg-gray-100 p-2 rounded-lg">
-            <label class="text-xs font-semibold text-gray-500">C. Insumos</label>
-            <p id="modal-custo-insumos" class="text-lg font-bold text-gray-800">R$ 0,00</p>
-          </div>
-          <div class="bg-gray-100 p-2 rounded-lg">
-            <label class="text-xs font-semibold text-gray-500">Outros Custos</label>
-            <p id="modal-outros-custos" class="text-lg font-bold text-gray-800">R$ 0,00</p>
-          </div>
-          <div class="bg-gray-100 p-2 rounded-lg">
-            <label class="text-xs font-semibold text-gray-500">Custo/KG</label>
-            <p id="modal-custo-kg" class="text-lg font-bold text-gray-800">R$ 0,00</p>
-          </div>
-          <div class="bg-gray-100 p-2 rounded-lg">
-            <label class="text-xs font-semibold text-gray-500">Custo/UN</label>
-            <p id="modal-custo-un" class="text-lg font-bold text-gray-800">R$ 0,00</p>
-          </div>
+          <div class="bg-gray-100 p-2 rounded-lg"><label class="text-xs font-semibold text-gray-500">Medida de Venda</label><p id="modal-medida-venda" class="text-lg font-bold text-gray-800">UN</p></div>
+          <div class="bg-yellow-100 p-2 rounded-lg border border-yellow-300"><label class="text-xs font-semibold text-yellow-800">Preço de Venda</label><p id="modal-preco-venda" class="text-xl font-bold text-yellow-900"></p></div>
+          <div class="bg-gray-200 p-2 rounded-lg"><label class="text-xs font-semibold text-gray-500">Preço Sugerido</label><p id="modal-preco-sugerido" class="text-lg font-bold text-gray-800"></p></div>
+          <div class="bg-red-700 text-white p-2 rounded-lg"><label class="text-xs font-semibold opacity-80">Markup</label><p id="modal-markup" class="text-lg font-bold"></p></div>
+          <div class="bg-red-800 text-white p-2 rounded-lg"><label class="text-xs font-semibold opacity-80">CMV</label><p id="modal-cmv" class="text-lg font-bold"></p></div>
+          <div class="bg-gray-100 p-2 rounded-lg"><label class="text-xs font-semibold text-gray-500">C. Insumos</label><p id="modal-custo-insumos" class="text-lg font-bold text-gray-800"></p></div>
+          <div class="bg-gray-100 p-2 rounded-lg"><label class="text-xs font-semibold text-gray-500">Outros Custos</label><p id="modal-outros-custos" class="text-lg font-bold text-gray-800"></p></div>
+          <div class="bg-gray-100 p-2 rounded-lg"><label class="text-xs font-semibold text-gray-500">Custo/KG</label><p id="modal-custo-kg" class="text-lg font-bold text-gray-800"></p></div>
+          <div class="bg-gray-100 p-2 rounded-lg"><label class="text-xs font-semibold text-gray-500">Custo/UN</label><p id="modal-custo-un" class="text-lg font-bold text-gray-800"></p></div>
         </div>
       </div>
-
       <div class="mt-6 flex justify-end gap-3">
-        <button onclick="public_index_fecharModalReceita()" class="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-semibold">Cancelar</button>
+        <button onclick="public_receitas_fecharModalReceita()" class="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-semibold">Cancelar</button>
         <button class="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold">Salvar</button>
       </div>
     </div>
   </div>
+
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-functions-compat.js"></script>
 
   <script>
-
-    let public_index_insumosData = [];
-    let public_index_receitasData = {};
-
     const firebaseConfig = {
       apiKey: "AIzaSyAK2fYpIOwetW6xOQHApuSb3WTyjJlyFi8",
       authDomain: "controle-de-cmv-pro.firebaseapp.com",
@@ -189,6 +103,7 @@
       appId: "1:762165281549:web:f485d42854b74aa680e644"
     };
 
+    // INICIALIZAÇÃO GLOBAL
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -198,12 +113,11 @@
       try {
         db.useEmulator('127.0.0.1', 8080);
         functions.useEmulator('127.0.0.1', 5001);
-        console.log('🔌 Conectado aos Emuladores: Firestore:8080, Functions:5001');
-      } catch (e) {
-        console.warn('Não consegui conectar aos Emuladores:', e);
-      }
+        console.log('🔌 Conectado aos Emuladores.');
+      } catch (e) { console.warn('Não foi possível conectar aos Emuladores:', e); }
     }
 
+    // LÓGICA DE AUTENTICAÇÃO E ROTEAMENTO
     const loginOverlay = document.getElementById("login-overlay");
     const loginButton = document.getElementById("login-button");
     const logoutButton = document.getElementById("logout-button");
@@ -222,281 +136,75 @@
       if (user) {
         loginOverlay.style.display = "none";
         userInfo.classList.remove("hidden");
-        public_index_mostrarPagina('receitas');
+        // Inicia o roteador quando o usuário está logado
+        public_index_iniciarRoteador();
       } else {
         loginOverlay.style.display = "flex";
         userInfo.classList.add("hidden");
         appContainer.innerHTML = '';
       }
     });
-
-    function public_index_mostrarPagina(nomePagina) {
-      document.querySelectorAll(".menu-item").forEach(a => a.classList.remove("active"));
-      document.getElementById(`nav-${nomePagina}`)?.classList.add("active");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      if (nomePagina === 'receitas') public_index_renderizarPaginaReceitas();
-      else if (nomePagina === 'insumos') public_index_renderizarPaginaInsumos();
-    }
-
-    function public_index_renderizarPaginaReceitas() {
-      appContainer.innerHTML = `
-        <header class="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
-          <div>
-            <h2 class="text-3xl font-bold text-gray-900">Receitas</h2>
-            <p class="text-gray-600 mt-1">Clique duas vezes em uma receita para ver os detalhes.</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <button id="btn-importar-receitas" class="px-5 py-2.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600 font-semibold transition">Importar Receitas (Uso Único)</button>
-            <button class="px-5 py-2.5 rounded-lg bg-[color:var(--azul-600)] text-white hover:opacity-95 font-semibold">Nova Receita</button>
-          </div>
-        </header>
-        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 overflow-hidden">
-          <div class="overflow-y-auto" style="max-height: calc(100vh - 280px);">
-            <table class="min-w-full text-left">
-              <thead class="bg-[color:var(--azul-50)] text-gray-700 sticky top-0">
-                <tr>
-                  <th class="px-5 py-3">Nome da Receita</th>
-                  <th class="px-5 py-3">Rendimento (KG)</th>
-                  <th class="px-5 py-3">Rendimento (UN)</th>
-                  <th class="px-5 py-3">Perda</th>
-                </tr>
-              </thead>
-              <tbody id="receitas-table-body" class="divide-y divide-gray-100"></tbody>
-            </table>
-          </div>
-        </div>`;
-      document.getElementById('btn-importar-receitas').addEventListener('click', public_index_chamarFuncaoImportarReceitas);
-      public_index_carregarReceitas();
-    }
     
-    function public_index_carregarReceitas() {
-      const tableBody = document.getElementById("receitas-table-body");
-      tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Carregando receitas...</td></tr>`;
-
-      db.collection("receitas").orderBy("nome").onSnapshot(querySnapshot => {
-        public_index_receitasData = {};
-        if (querySnapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhuma receita encontrada.</td></tr>`;
-            return;
+    // Função para carregar um script dinamicamente
+    function public_index_carregarScript(url) {
+        // Remove script antigo se existir
+        const scriptAntigo = document.getElementById('pagina-script');
+        if (scriptAntigo) {
+            scriptAntigo.remove();
         }
         
-        let html = '';
-        querySnapshot.forEach(doc => {
-            const receita = doc.data();
-            public_index_receitasData[doc.id] = receita;
-            
-            const rendimentoKgFormatado = (receita.rendimentoKg || 0).toLocaleString('pt-BR', { minimumFractionDigits: 3 });
-            const rendimentoUnFormatado = (receita.rendimentoUn || 0).toLocaleString('pt-BR');
-            const perdaFormatada = (receita.perda || 0).toLocaleString('pt-BR', { style: 'percent', minimumFractionDigits: 2 });
-
-            html += `<tr class="hover:bg-gray-50 cursor-pointer" data-doc-id="${doc.id}" ondblclick="public_index_abrirModalReceita(this.getAttribute('data-doc-id'))">
-                    <td class="px-5 py-3 font-medium text-gray-800">${receita.nome}</td>
-                    <td class="px-5 py-3">${rendimentoKgFormatado}</td>
-                    <td class="px-5 py-3">${rendimentoUnFormatado}</td>
-                    <td class="px-5 py-3">${perdaFormatada}</td>
-                </tr>`;
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.id = 'pagina-script';
+            script.src = url;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.body.appendChild(script);
         });
-        tableBody.innerHTML = html;
-        
-      }, error => {
-          console.error("Erro ao carregar receitas: ", error);
-          tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-red-500">Ocorreu um erro ao carregar as receitas.</td></tr>`;
-      });
     }
 
-    async function public_index_abrirModalReceita(docId) {
-      const receita = public_index_receitasData[docId];
-      if (!receita) return;
-
-      // Popula os dados gerais
-      document.getElementById('modal-nome-produto').textContent = receita.nome;
-      document.getElementById('modal-rendimento-kg').textContent = (receita.rendimentoKg || 0).toLocaleString('pt-BR', { minimumFractionDigits: 3 });
-      document.getElementById('modal-rendimento-un').textContent = (receita.rendimentoUn || 0).toLocaleString('pt-BR');
-      document.getElementById('modal-perda').textContent = (receita.perda || 0).toLocaleString('pt-BR', { style: 'percent', minimumFractionDigits: 2 });
-      
-      // Reseta os campos de cálculo (placeholders)
-      document.getElementById('modal-preco-venda').textContent = 'R$ 0,00';
-      document.getElementById('modal-preco-sugerido').textContent = 'R$ 0,00';
-      document.getElementById('modal-markup').textContent = '0,00%';
-      document.getElementById('modal-cmv').textContent = '0,00%';
-      document.getElementById('modal-custo-insumos').textContent = 'R$ 0,00';
-      document.getElementById('modal-outros-custos').textContent = 'R$ 0,00';
-      document.getElementById('modal-custo-kg').textContent = 'R$ 0,00';
-      document.getElementById('modal-custo-un').textContent = 'R$ 0,00';
-
-      const insumosTbody = document.getElementById('modal-insumos-tbody');
-      insumosTbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Buscando dados dos insumos...</td></tr>';
-      receitaModal.style.display = 'flex';
-
-      try {
-        const promessasInsumos = receita.insumos.map(insumo => insumo.insumoRef.get());
-        const snapshotsInsumos = await Promise.all(promessasInsumos);
+    // ROTEADOR PRINCIPAL
+    async function public_index_rotear() {
+        const hash = window.location.hash.substring(1) || 'receitas'; // Padrão para receitas
         
-        let insumosHtml = '';
-        let custoTotalInsumos = 0; // Variável para o cálculo que você implementará
-        
-        for (let i = 0; i < snapshotsInsumos.length; i++) {
-          const insumoDoc = snapshotsInsumos[i];
-          const insumoReceita = receita.insumos[i];
-          const insumoData = insumoDoc.exists ? insumoDoc.data() : { preco: 0, nome: insumoReceita.nome + ' (Não encontrado)' };
-          
-          const precoUnitario = insumoData.preco || 0;
-          const valorUsado = insumoReceita.quantidade * precoUnitario;
-          custoTotalInsumos += valorUsado;
-
-          insumosHtml += `<tr class="text-gray-700 text-sm">
-              <td class="px-4 py-2">${insumoReceita.nome}</td>
-              <td class="px-4 py-2">${insumoReceita.quantidade.toLocaleString('pt-BR', { minimumFractionDigits: 3 })}</td>
-              <td class="px-4 py-2">${precoUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-              <td class="px-4 py-2 font-semibold">${valorUsado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-            </tr>`;
+        document.querySelectorAll(".menu-item").forEach(a => a.classList.remove("active"));
+        const linkAtivo = document.getElementById(`nav-${hash}`);
+        if (linkAtivo) {
+            linkAtivo.classList.add("active");
         }
-        insumosTbody.innerHTML = insumosHtml;
 
-        // AQUI VOCÊ PODERÁ ADICIONAR SEUS CÁLCULOS FUTURAMENTE
-        // Por enquanto, apenas atualizamos o Custo de Insumos como exemplo
-        document.getElementById('modal-custo-insumos').textContent = custoTotalInsumos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-      } catch (error) {
-        console.error("Erro ao buscar detalhes dos insumos:", error);
-        insumosTbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-red-500">Erro ao carregar insumos.</td></tr>';
-      }
+        try {
+            await public_index_carregarScript(`${hash}.js`);
+        } catch (error) {
+            console.error(`Erro ao carregar o script para a página: ${hash}`, error);
+            appContainer.innerHTML = `<p class="text-red-500">Erro ao carregar a página ${hash}.</p>`;
+        }
     }
 
-    function public_index_fecharModalReceita() {
-      receitaModal.style.display = 'none';
-    }
+    function public_index_iniciarRoteador() {
+        window.addEventListener('hashchange', public_index_rotear);
+        public_index_rotear(); // Carrega a página inicial baseada no hash ou padrão
+        
+        // Adiciona os eventos de clique nos links do menu para usar o hash
+        document.querySelectorAll('aside nav a').forEach(link => {
+            link.onclick = (e) => {
+                e.preventDefault();
+                const page = link.id.replace('nav-', '');
+                window.location.hash = page;
+            };
+        });
 
-    receitaModal.addEventListener('click', function(event) {
-      if (event.target === receitaModal) {
-        public_index_fecharModalReceita();
-      }
-    });
-
-    async function public_index_renderizarPaginaInsumos() {
-      appContainer.innerHTML = `
-      <header class="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div class="flex-1">
-          <h2 class="text-3xl font-bold text-gray-900">Insumos</h2>
-          <p class="text-gray-600 mt-1">Veja e atualize os preços dos seus insumos.</p>
-        </div>
-        <div class="flex-none text-right">
-          <button id="btn-atualizar-precos" class="px-5 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold transition">Atualizar Preços da Planilha</button>
-          <p class="text-xs text-gray-500 mt-2">Última verificação: <span id="ultima-verificacao-data">--</span></p>
-        </div>
-      </header>
-      <div class="mb-4"><input type="text" id="insumos-search-input" placeholder="Buscar por nome, unidade, preço..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" onkeyup="public_index_filtrarInsumos()"></div>
-      <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 overflow-hidden">
-       <div class="overflow-y-auto" style="max-height: calc(100vh - 280px);">
-        <table class="min-w-full text-left">
-          <thead class="bg-[color:var(--azul-50)] text-gray-700 sticky top-0">
-            <tr>
-              <th class="px-5 py-3">Nome do Insumo</th>
-              <th class="px-5 py-3">Unidade</th>
-              <th class="px-5 py-3">Preço</th>
-              <th class="px-5 py-3">Data da Cotação</th>
-            </tr>
-          </thead>
-          <tbody id="insumos-table-body" class="divide-y divide-gray-100"></tbody>
-        </table>
-      </div></div>`;
-      document.getElementById("btn-atualizar-precos").addEventListener('click', public_index_chamarFuncaoAtualizarPrecos);
-      public_index_carregarInsumos();
-      public_index_carregarUltimaAtualizacaoGeral();
-    }
-
-    function public_index_filtrarInsumos() {
-      const termoBusca = document.getElementById('insumos-search-input').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const tableBody = document.getElementById("insumos-table-body");
-      const insumosFiltrados = public_index_insumosData.filter(insumo => {
-          const nome = insumo.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          const unidade = insumo.unidade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          const preco = insumo.preco.toString().toLowerCase().replace(",", ".");
-          const dataCotacao = insumo.dataCotacao ? insumo.dataCotacao.toDate().toLocaleDateString('pt-BR') : '';
-          return nome.includes(termoBusca) || unidade.includes(termoBusca) || preco.includes(termoBusca) || dataCotacao.includes(termoBusca);
-      });
-      if (insumosFiltrados.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado para a busca "${document.getElementById('insumos-search-input').value}".</td></tr>`;
-          return;
-      }
-      let html = '';
-      insumosFiltrados.forEach(insumo => {
-          const precoFormatado = insumo.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-          let dataCotacaoFormatada = 'N/A';
-          if (insumo.dataCotacao) {
-              dataCotacaoFormatada = new Date(insumo.dataCotacao.seconds * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        // Adiciona evento de fechar modal ao clicar fora
+        receitaModal.addEventListener('click', function(event) {
+          if (event.target === receitaModal) {
+            // A função de fechar está em receitas.js, precisamos garantir que ela exista
+            if (typeof public_receitas_fecharModalReceita === 'function') {
+                public_receitas_fecharModalReceita();
+            }
           }
-          html += `<tr class="hover:bg-gray-50"><td class="px-5 py-3 font-medium text-gray-800">${insumo.nome}</td><td class="px-5 py-3">${insumo.unidade}</td><td class="px-5 py-3">${precoFormatado}</td><td class="px-5 py-3 text-sm text-gray-600">${dataCotacaoFormatada}</td></tr>`;
-      });
-      tableBody.innerHTML = html;
+        });
     }
 
-    function public_index_carregarUltimaAtualizacaoGeral() {
-      const dataElement = document.getElementById("ultima-verificacao-data");
-      db.collection("metadata").doc("insumos").onSnapshot(doc => {
-        if (doc.exists && doc.data().ultimaAtualizacaoGeral) {
-          dataElement.textContent = new Date(doc.data().ultimaAtualizacaoGeral.seconds * 1000).toLocaleString('pt-BR');
-        } else { dataElement.textContent = "Nunca executado"; }
-      }, error => {
-        console.error("Erro ao carregar metadados:", error);
-        dataElement.textContent = "Erro ao carregar";
-      });
-    }
-
-    function public_index_carregarInsumos() {
-      const tableBody = document.getElementById("insumos-table-body");
-      db.collection("insumos").orderBy("nome").onSnapshot(querySnapshot => {
-        public_index_insumosData = [];
-        if (querySnapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-gray-500">Nenhum insumo encontrado.</td></tr>`;
-            return;
-        }
-        querySnapshot.forEach(doc => { public_index_insumosData.push(doc.data()); });
-        public_index_filtrarInsumos();
-      }, error => {
-        console.error("Erro ao carregar insumos: ", error);
-        tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-red-500">Ocorreu um erro ao carregar os insumos.</td></tr>`;
-      });
-    }
-
-    async function public_index_chamarFuncaoAtualizarPrecos() {
-      const botao = document.getElementById('btn-atualizar-precos');
-      const textoOriginal = botao.innerHTML;
-      botao.disabled = true;
-      botao.innerHTML = 'Atualizando...';
-      botao.classList.add('opacity-50', 'cursor-not-allowed');
-      try {
-        const resultado = await functions.httpsCallable('atualizarPrecosDaPlanilha')();
-        alert(`Sucesso! ${resultado.data.message}`);
-      } catch (error) {
-        console.error("Erro ao chamar a função:", error);
-        alert(`Erro: ${error.message}`);
-      } finally {
-        botao.disabled = false;
-        botao.innerHTML = textoOriginal;
-        botao.classList.remove('opacity-50', 'cursor-not-allowed');
-      }
-    }
-
-    async function public_index_chamarFuncaoImportarReceitas() {
-     if (!confirm("ATENÇÃO: Esta é uma operação de uso único para importar/atualizar todas as receitas da planilha.\n\nDeseja continuar?")) return;
-     const botao = document.getElementById('btn-importar-receitas');
-     const textoOriginal = botao.innerHTML;
-     botao.disabled = true;
-     botao.innerHTML = 'Importando...';
-     botao.classList.add('opacity-50', 'cursor-not-allowed');
-     try {
-       const resultado = await functions.httpsCallable('importarReceitasDaPlanilha')();
-       alert(`Sucesso! ${resultado.data.message}`);
-     } catch (error) {
-       console.error("Erro ao chamar a função de importação de receitas:", error);
-       alert(`Erro ao importar: ${error.message}`);
-     } finally {
-       botao.disabled = false;
-       botao.innerHTML = textoOriginal;
-       botao.classList.remove('opacity-50', 'cursor-not-allowed');
-      }
-    }
   </script>
 </body>
 </html>
