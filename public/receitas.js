@@ -1,7 +1,7 @@
 // public/receitas.js
 
-// Variável global para armazenar os dados das receitas desta página
-let public_receitas_receitasData = {};
+// CORREÇÃO: Usamos 'var' e verificamos se a variável já existe para evitar o erro de re-declaração.
+var public_receitas_receitasData = window.public_receitas_receitasData || {};
 
 function public_receitas_renderizarPaginaReceitas() {
     const appContainer = document.getElementById("app");

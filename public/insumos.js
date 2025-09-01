@@ -1,7 +1,7 @@
 // public/insumos.js
 
-// Variável global para armazenar os dados de insumos desta página
-let public_insumos_insumosData = [];
+// CORREÇÃO: Usamos 'var' e verificamos se a variável já existe para evitar o erro de re-declaração.
+var public_insumos_insumosData = window.public_insumos_insumosData || [];
 
 function public_insumos_renderizarPaginaInsumos() {
     const appContainer = document.getElementById("app");
